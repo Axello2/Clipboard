@@ -41,10 +41,20 @@
       }
     });
 
-    // In Echtzeit speichern (Last Write Wins)
-    textarea.addEventListener("input", () => {
-      set(padRef, textarea.value);
-    });
+        // In Echtzeit speichern (für Mobilgeräte und Fehler-Radar optimiert)
+    const saveToFirebase = () => {
+      set(padRef, textarea.value)
+        .then(() => {
+          // Erfolgreich gespeichert!
+        })
+        .catch((error) => {
+          alert("SCHREIB-FEHLER: " + error.message);
+        });
+    };
+
+    textarea.addEventListener("input", saveToFirebase);
+    textarea.addEventListener("keyup", saveToFirebase);
+
   </script>
 </body>
 </html>
