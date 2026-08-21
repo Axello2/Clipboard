@@ -4,7 +4,24 @@
   <title>Live Clipboard</title>
   <style>
     body { margin: 0; }
-    textarea { width: 100vw; height: 100vh; border: none; outline: none; font-size: 32px; padding: 15px; box-sizing: border-box; }
+    
+    /* Standardgröße für Mobilgeräte (wie das iPhone) */
+    textarea { 
+      width: 100vw; 
+      height: 100vh; 
+      border: none; 
+      outline: none; 
+      font-size: 32px; 
+      padding: 15px; 
+      box-sizing: border-box; 
+    }
+    
+    /* Automatische Anpassung für größere Bildschirme (wie Laptops ab 768px Breite) */
+    @media (min-width: 768px) {
+      textarea {
+        font-size: 18px;
+      }
+    }
   </style>
 </head>
 <body>
