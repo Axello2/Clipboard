@@ -34,12 +34,13 @@
     const padRef = ref(db, "pads/" + padId);
     const textarea = document.getElementById("pad");
 
-    // Live-Update empfangen
+      // Live-Update empfangen (mit cleverer Fokus-Erkennung)
     onValue(padRef, (snapshot) => {
-      if (document.activeElement !== textarea) {
+      if (!document.hasFocus() || document.activeElement !== textarea) {
         textarea.value = snapshot.val() || "";
       }
     });
+
 
         // In Echtzeit speichern (für Mobilgeräte und Fehler-Radar optimiert)
     const saveToFirebase = () => {
