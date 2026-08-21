@@ -52,8 +52,16 @@
     let isTyping = false;
     let typingTimer;
 
-    // Live-Update empfangen
+     // Live-Update empfangen mit Existenzprüfung
     onValue(padRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        // Wenn das Pad nicht in der Datenbank existiert: Editor sperren!
+        textarea.disabled = true;
+        textarea.value = "Zutritt verweigert: Dieses Clipboard wurde vom Admin noch nicht freigeschaltet.";
+        textarea.style.backgroundColor = "#ffebee"; // Färbt den Hintergrund leicht rötlich
+        return;
+      }
+      
       // Nur aktualisieren, wenn wir NICHT gerade selbst aktiv tippen
       if (!isTyping) {
         textarea.value = snapshot.val() || "";
