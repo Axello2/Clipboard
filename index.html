@@ -15,9 +15,15 @@
     import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
+      apiKey: "AIzaSyD1Q4wL-j9Q35ENs_1Yfq7Br9M7N479qqM",
+      authDomain: "clipboard-online-a221d.firebaseapp.com",
       databaseURL: "https://clipboard-online-a221d-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "clipboard-online-a221d"
+      projectId: "clipboard-online-a221d",
+      storageBucket: "clipboard-online-a221d.firebasestorage.app",
+      messagingSenderId: "619728606866",
+      appId: "1:619728606866:web:89ed0f209e872f1752f84b"
     };
+
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
