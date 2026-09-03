@@ -1,26 +1,21 @@
 <!DOCTYPE html>
+<!-- Clipboard Online by Al Vogelmann | Version 3 | 03.09.2026, 21:38:05 Uhr (MESZ) -->
 <html>
 <head>
   <title>Live Clipboard</title>
   <style>
     body { margin: 0; }
-    
-    /* Standardgröße für Mobilgeräte (wie das iPhone) */
-    textarea { 
-      width: 100vw; 
-      height: 100vh; 
-      border: none; 
-      outline: none; 
-      font-size: 32px; 
-      padding: 15px; 
-      box-sizing: border-box; 
+    textarea {
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      outline: none;
+      font-size: 32px;
+      padding: 15px;
+      box-sizing: border-box;
     }
-    
-    /* Automatische Anpassung für größere Bildschirme (wie Laptops ab 768px Breite) */
     @media (min-width: 768px) {
-      textarea {
-        font-size: 18px;
-      }
+      textarea { font-size: 18px; }
     }
   </style>
 </head>
@@ -29,7 +24,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD1Q4wL-j9Q35ENs_1Yfq7Br9M7N479qqM",
@@ -43,49 +38,63 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-
     const urlParams = new URLSearchParams(window.location.search);
     const padId = urlParams.get('pad') || 'default';
     const padRef = ref(db, "pads/" + padId);
     const textarea = document.getElementById("pad");
+    const writerId = crypto.randomUUID?.() || Math.random().toString(36).slice(2);
+    let latestLocalVersion = { updatedAt: 0, writerId: "" };
+    let saveTimer;
 
-    let isTyping = false;
-    let typingTimer;
+    const compareVersions = (left, right) =>
+      left.updatedAt - right.updatedAt || left.writerId.localeCompare(right.writerId);
 
-     // Live-Update empfangen mit Existenzprüfung
+    const normalizePad = (value) => {
+      if (typeof value === "string") {
+        return { text: value, updatedAt: 0, writerId: "legacy" };
+      }
+      return {
+        text: value?.text || "",
+        updatedAt: Number(value?.updatedAt) || 0,
+        writerId: value?.writerId || ""
+      };
+    };
+
     onValue(padRef, (snapshot) => {
       if (!snapshot.exists()) {
-        // Wenn das Pad nicht in der Datenbank existiert: Editor sperren!
         textarea.disabled = true;
         textarea.value = "Zutritt verweigert: Dieses Clipboard wurde vom Admin noch nicht freigeschaltet.";
-        textarea.style.backgroundColor = "#ffebee"; // Färbt den Hintergrund leicht rötlich
+        textarea.style.backgroundColor = "#ffebee";
         return;
       }
-      
-      // Nur aktualisieren, wenn wir NICHT gerade selbst aktiv tippen
-      if (!isTyping) {
-        textarea.value = snapshot.val() || "";
+
+      const remotePad = normalizePad(snapshot.val());
+      if (compareVersions(remotePad, latestLocalVersion) >= 0) {
+        textarea.value = remotePad.text;
+        latestLocalVersion = remotePad;
       }
     });
 
-    // In Echtzeit speichern (mit intelligentem Tipp-Timer)
-    const saveToFirebase = () => {
-      isTyping = true;
-      clearTimeout(typingTimer);
-
-      set(padRef, textarea.value)
-        .catch((error) => {
-          alert("SCHREIB-FEHLER: " + error.message);
-        });
-
-      // Nach 1.5 Sekunden Tipp-Pause geben wir den Empfang wieder frei
-      typingTimer = setTimeout(() => {
-        isTyping = false;
-      }, 1500);
+    const saveToFirebase = (text, editedAt) => {
+      runTransaction(padRef, (currentValue) => {
+        const currentPad = normalizePad(currentValue);
+        const editedVersion = { updatedAt: editedAt, writerId };
+        if (compareVersions(currentPad, editedVersion) > 0) {
+          return;
+        }
+        return { text, updatedAt: editedAt, writerId };
+      }, { applyLocally: true }).catch((error) => {
+        alert("SCHREIB-FEHLER: " + error.message);
+      });
     };
 
-    textarea.addEventListener("input", saveToFirebase);
-    textarea.addEventListener("keyup", saveToFirebase);
+    textarea.addEventListener("input", () => {
+      const text = textarea.value;
+      const editedAt = Date.now();
+      latestLocalVersion = { updatedAt: editedAt, writerId };
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => saveToFirebase(text, editedAt), 250);
+    });
   </script>
 </body>
 </html>
